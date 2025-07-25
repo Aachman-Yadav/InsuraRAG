@@ -4,7 +4,7 @@
 
 import os
 from dotenv import load_dotenv
-from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain_pinecone import Pinecone as Pinecone_langchain
 from pinecone import Pinecone as pinecone_client
 from langchain_core.documents import Document
@@ -15,11 +15,12 @@ load_dotenv()
 
 pc = pinecone_client(api_key=os.getenv("PINECONE_API_KEY"))
 
-index_name = "insurance-rag"
+index_name = "insura-rag"
 
-embedding_model = HuggingFaceEmbeddings(
-    model_name="BAAI/bge-base-en-v1.5",
-    encode_kwargs={"normalize_embeddings": True}
+embedding_model = GoogleGenerativeAIEmbeddings(
+    model="models/gemini-embedding-001",  
+    task_type="retrieval_document",
+    google_api_key=os.getenv("GOOGLE_API_KEY")  
 )
 
 def embed_and_store_clauses(clause_docs: List[Document]):
