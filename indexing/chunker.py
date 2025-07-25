@@ -22,11 +22,11 @@ def chunk_documents(documents, chunk_size=5000, chunk_overlap=500):
     
     for idx, chunk in enumerate(chunked_docs):
         
-        doc_uid = chunk.metadata.get("doc_uid", "UNKNOWN")
+        doc_id = chunk.metadata.get("doc_id", "UNKNOWN")
                 
         chunk.metadata["chunk_index"] = idx
         chunk.metadata["chunk_size"] = len(chunk.page_content)
-        chunk.metadata["chunk_uid"] = generate_chunk_uid(doc_uid, idx)
-        chunk.metadata["doc_uid"] = doc_uid
+        chunk.metadata["chunk_uid"] = generate_chunk_uid(doc_id, idx)
+        chunk.metadata["doc_id"] = doc_id
         
     return chunked_docs

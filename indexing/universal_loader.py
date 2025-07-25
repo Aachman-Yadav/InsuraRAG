@@ -7,15 +7,21 @@ import uuid
 from langchain_community.document_loaders import PyMuPDFLoader, UnstructuredEmailLoader, UnstructuredWordDocumentLoader, TextLoader
 from utils.logger import logger
 from utils.clean_text import clean_text
+from utils.blob_handler import download_blob
 
 def load_document(file_path: str):
     """It Loads a single document file (PDF, EMAIL, DOCX) and return them as LangChain Document"""
+    try:
+        if file_path.startswith("blob:") or file_path.startswith("http"):
+            logger.info(f"Downloading blob from URL: {file_path}")
+            file_path = download_blob(file_path)
+            logger.info(f"Downloaded blob to local path: {file_path}")
+        
+        ext = file_path.lower().split('.')[-1]
+        filename = os.path.basename(file_path)
+        doc_id = str(uuid.uuid4())[:12]
     
-    ext = file_path.lower().split('.')[-1]
-    filename = os.path.basename(file_path)
-    doc_id = str(uuid.uuid4())[:12]
-    
-    try: 
+     
         if ext == 'pdf':
             loader = PyMuPDFLoader(file_path, mode='single')
         elif ext == 'docx':
