@@ -1,3 +1,6 @@
+######################
+# Generate UID
+######################
 import uuid
 
 def generate_doc_uid() -> str:
