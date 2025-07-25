@@ -4,6 +4,9 @@
 
 import os
 import asyncio
+import random
+from aiolimiter import AsyncLimiter
+from google.api_core.exceptions import ResourceExhausted
 from typing import List
 from tenacity import retry, wait_random_exponential, stop_after_attempt
 from dotenv import load_dotenv
@@ -22,6 +25,8 @@ llm_gemini = ChatGoogleGenerativeAI(
     temperature=0,
     google_api_key=os.getenv("GOOGLE_API_KEY"),
 )
+
+rate_limiter = AsyncLimiter(max_rate=2, time_period=1)  
 
 #############################
 # Step 1: Clause Extraction
@@ -61,6 +66,11 @@ async def async_extract_clauses_from_chunk(chunk: Document) -> List[Document]:
 
         logger.info(f"[Clause LLM] Extracted {len(clause_docs)} clauses from chunk {chunk_index}")
         return clause_docs
+    
+    except ResourceExhausted as e:
+        logger.warning("[Clause LLM] Rate limit hit. Sleeping for 60 seconds...")
+        await asyncio.sleep(60)
+        raise e
 
     except Exception as e:
         logger.error(f"[Clause LLM] Failed for chunk {chunk_index}: {e}")
@@ -87,6 +97,11 @@ async def async_enrich_clause_with_metadata(clause_doc: Document) -> Document:
 
         logger.info(f"[Meta LLM] Metadata extracted for clause {clause_id}")
         return Document(page_content=clause_text, metadata=merged_metadata)
+    
+    except ResourceExhausted as e:
+        logger.warning("[Clause LLM] Rate limit hit. Sleeping for 60 seconds...")
+        await asyncio.sleep(60)
+        raise e
 
     except Exception as e:
         logger.error(f"[Meta LLM] Metadata extraction failed for {clause_doc.metadata.get('clause_id')}: {e}")
@@ -101,19 +116,22 @@ async def async_batch_extract_clauses(chunks: List[Document], concurrency=10) ->
     semaphore = asyncio.Semaphore(concurrency)
 
     async def sem_task(chunk):
-        async with semaphore:
+        async with semaphore, rate_limiter:
+            await asyncio.sleep(random.uniform(0.5, 1.5))
             return await async_extract_clauses_from_chunk(chunk)
 
     results = await asyncio.gather(*(sem_task(chunk) for chunk in chunks))
     return [clause for group in results for clause in group]  
 
 
-async def async_batch_enrich_metadata(clauses: List[Document], concurrency=10) -> List[Document]:
+async def async_batch_enrich_metadata(clauses: List[Document], concurrency=1) -> List[Document]:
     logger.info(f"[Meta LLM] Enriching metadata for {len(clauses)} clauses (concurrency={concurrency})")
     semaphore = asyncio.Semaphore(concurrency)
 
     async def sem_task(clause_doc):
-        async with semaphore:
+        async with semaphore, rate_limiter:
+            await asyncio.sleep(random.uniform(0.5, 1.5))
             return await async_enrich_clause_with_metadata(clause_doc)
 
     return await asyncio.gather(*(sem_task(clause) for clause in clauses))
+    

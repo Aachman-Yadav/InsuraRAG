@@ -3,16 +3,17 @@
 ######################
 
 import os
+import uuid
 from langchain_community.document_loaders import PyMuPDFLoader, UnstructuredEmailLoader, UnstructuredWordDocumentLoader, TextLoader
-from utils.generate_uid import generate_doc_uid
 from utils.logger import logger
+from utils.clean_text import clean_text
 
 def load_document(file_path: str):
     """It Loads a single document file (PDF, EMAIL, DOCX) and return them as LangChain Document"""
     
     ext = file_path.lower().split('.')[-1]
     filename = os.path.basename(file_path)
-    doc_uid = generate_doc_uid()
+    doc_id = str(uuid.uuid4())[:12]
     
     try: 
         if ext == 'pdf':
@@ -29,9 +30,10 @@ def load_document(file_path: str):
         logger.info(f"Loading file: {filename} ({ext.upper()})")
         
         for i, doc in enumerate(loader.lazy_load()):
+            doc.page_content = clean_text(doc.page_content)
             doc.metadata["source"] = filename
             doc.metadata["file_type"] = ext
-            doc.metadata["doc_uid"] = doc_uid
+            doc.metadata["doc_id"] = doc_id
             logger.info(f"Loaded chunk {i+1} from {filename} ({len(doc.page_content)} chars)")
             yield doc
 
