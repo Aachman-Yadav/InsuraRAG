@@ -12,7 +12,7 @@ def load_document(file_path: str):
     
     ext = file_path.lower().split('.')[-1]
     filename = os.path.basename(file_path)
-    doc_uid = generate_doc_uid(file_path)
+    doc_uid = generate_doc_uid()
     
     try: 
         if ext == 'pdf':
