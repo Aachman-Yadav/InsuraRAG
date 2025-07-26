@@ -9,13 +9,13 @@ from langchain_core.documents import Document
 
 from indexing.universal_loader import load_document
 from indexing.chunker import chunk_documents
-from indexing.extractor import async_extract_clauses_from_chunk, async_enrich_clause_with_metadata
+from indexing.extractor import async_extract_clauses_from_chunk
 from indexing.vector_store import embed_and_store_clauses
 from utils.logger import logger
 
 PDF_FOLDER = "./data/"
-CHUNK_SIZE = 5000
-CHUNK_OVERLAP = 500
+CHUNK_SIZE = 3000
+CHUNK_OVERLAP = 300
 
 async def process_file(file_path: str) -> List[Document]:
     logger.info(f"\nProcessing: {file_path}")
@@ -29,13 +29,9 @@ async def process_file(file_path: str) -> List[Document]:
     clause_tasks = [async_extract_clauses_from_chunk(chunk) for chunk in chunks]
     clause_lists = await asyncio.gather(*clause_tasks)
     all_clauses = [clause for sublist in clause_lists for clause in sublist]
-    logger.info(f"Extracted {len(all_clauses)} clauses")
+    logger.info(f"[Pipeline] Extracted {len(all_clauses)} clauses")
 
-    enrich_tasks = [async_enrich_clause_with_metadata(clause) for clause in all_clauses]
-    enriched_clauses = await asyncio.gather(*enrich_tasks)
-    logger.info(f"Enriched {len(enriched_clauses)} clauses with metadata")
-
-    return enriched_clauses
+    return all_clauses
 
 async def process_all_files() -> List[Document]:
     all_final_clauses = []
@@ -56,7 +52,7 @@ def run_indexing_pipeline():
     final_clauses = asyncio.run(process_all_files())
 
     logger.info(f"Total enriched clauses: {len(final_clauses)}")
-    embed_and_store_clauses(final_clauses)
+    asyncio.run(embed_and_store_clauses(final_clauses))
     
 if __name__ == "__main__":
     run_indexing_pipeline()
