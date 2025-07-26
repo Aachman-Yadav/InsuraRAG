@@ -6,7 +6,7 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 from utils.generate_uid import generate_chunk_uid
 from utils.logger import logger
 
-def chunk_documents(documents, chunk_size=5000, chunk_overlap=500):
+def chunk_documents(documents, chunk_size=2000, chunk_overlap=200):
     """Splits loaded LangChain documents into smaller, overlapping chunks using RecursiveCharacterTextSplitter."""
     
     logger.info(f"Starting chunking: {len(documents)} documents, chunk_size={chunk_size}, overlap={chunk_overlap}")
